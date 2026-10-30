@@ -1,0 +1,3 @@
+import {v2 as cloudinary} from 'cloudinary';
+export function cloud(){if(!process.env.CLOUDINARY_API_SECRET)throw new Error('Cloudinary সংযোগ সেট করা হয়নি।');cloudinary.config({cloud_name:process.env.CLOUDINARY_CLOUD_NAME,api_key:process.env.CLOUDINARY_API_KEY,api_secret:process.env.CLOUDINARY_API_SECRET,secure:true,analytics:false});return cloudinary}
+export async function privateBill(publicId:string){const url=cloud().url(publicId,{resource_type:'image',type:'authenticated',secure:true,sign_url:true,analytics:false});const res=await fetch(url,{cache:'no-store'});if(!res.ok)throw new Error('মূল বিলের ছবি আনা যায়নি।');const buffer=Buffer.from(await res.arrayBuffer());if(buffer.length>6*1024*1024)throw new Error('বিলের ফাইল অনেক বড়।');return buffer}

@@ -1,0 +1,28 @@
+import mongoose,{Schema} from 'mongoose';
+const options={timestamps:true};
+const flat=new Schema({number:{type:String,required:true},floor:String,notes:String},options);
+const tenant=new Schema({name:String,phone:String,whatsapp:String,flat:{type:Schema.Types.ObjectId,ref:'Flat'},rent:Number,deposit:Number,start:String,end:String,active:{type:Boolean,default:true},rentChanges:{type:[{effective:String,amount:Number}],default:[]}},options);
+tenant.index({flat:1},{unique:true,partialFilterExpression:{active:true}});
+const invoice=new Schema({tenant:Schema.Types.ObjectId,flat:Schema.Types.ObjectId,period:String,name:String,flatNumber:String,rent:Number,utilities:Number,discount:Number,total:Number,paid:{type:Number,default:0},due:String,status:{type:String,default:'final'},paymentInstructions:String,paymentAccounts:{type:[{method:String,number:String,label:String}],default:[]},buildingSnapshot:{name:String,address:String,phone:String},utilityBreakdown:[{billId:String,category:String,amount:Number,publicId:String}],adjustments:{type:[{amount:Number,note:String}],default:[]}},options);
+invoice.index({tenant:1,period:1},{unique:true});
+const payment=new Schema({invoice:Schema.Types.ObjectId,amount:Number,method:String,date:String,reference:String,key:{type:String,unique:true},reversed:{type:Boolean,default:false}},options);
+const expense=new Schema({label:String,amount:Number,date:String,category:String},options);
+const utility=new Schema({period:String,category:String,amount:Number,allocations:[{flat:String,amount:Number}],url:String,publicId:String,method:String},options);
+const settings=new Schema({key:{type:String},building:String,address:String,owner:String,phone:String,paymentInstructions:String,paymentAccounts:{type:[{method:String,number:String,label:String}],default:[]},dueDay:{type:Number,default:10}},options);
+const user=new Schema({name:String,ownerId:Schema.Types.ObjectId,email:{type:String,unique:true},password:String,role:{type:String,enum:['Owner','Administrator'],default:'Owner'},sessionVersion:{type:Number,default:0}},options);
+const rate=new Schema({key:{type:String,unique:true},count:Number,expires:Date});rate.index({expires:1},{expireAfterSeconds:0});
+for(const schema of [flat,tenant,invoice,payment,expense,utility,settings])schema.add({ownerId:{type:Schema.Types.ObjectId,required:true,index:true,immutable:true}});
+flat.index({ownerId:1,number:1},{unique:true});settings.index({ownerId:1,key:1},{unique:true});
+export const Flat=mongoose.models.Flat||mongoose.model('Flat',flat);
+export const Tenant=mongoose.models.Tenant||mongoose.model('Tenant',tenant);
+export const Invoice=mongoose.models.Invoice||mongoose.model('Invoice',invoice);
+export const Payment=mongoose.models.Payment||mongoose.model('Payment',payment);
+export const Expense=mongoose.models.Expense||mongoose.model('Expense',expense);
+export const Utility=mongoose.models.Utility||mongoose.model('Utility',utility);
+export const Settings=mongoose.models.Settings||mongoose.model('Settings',settings);
+export const User=mongoose.models.User||mongoose.model('User',user);
+export const Rate=mongoose.models.Rate||mongoose.model('Rate',rate);
+
+const sharing=new Schema({invoice:{type:Schema.Types.ObjectId,unique:true},status:{type:String,enum:['prepared','confirmed']},confirmedAt:Date},options);
+sharing.add({ownerId:{type:Schema.Types.ObjectId,required:true,index:true,immutable:true}});
+export const Sharing=mongoose.models.Sharing||mongoose.model('Sharing',sharing);
